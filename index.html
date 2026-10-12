@@ -4,152 +4,1007 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IoT 128 | Realtime Dashboard</title>
+  <meta name="theme-color" content="#fbf5e9">
+  <title>IoT 128 | Cozy Sensor Dashboard</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     :root {
-      --bg: #0b1020;
-      --panel: #151d32;
-      --text: #f4f7ff;
-      --muted: #a8b3cc;
-      --accent: #8b7cff;
-      --border: #29344d;
+      --bg: #fbf5e9;
+      --cream: #fffaf0;
+      --card: #fffdf8;
+      --brown: #68442d;
+      --brown-dark: #493326;
+      --caramel: #a66b42;
+      --peach: #dfa17d;
+      --muted: #947b65;
+      --border: #ead8c1;
+      --green: #638568;
+      --shadow: 0 12px 32px rgba(104, 68, 45, 0.09);
     }
-    * { box-sizing: border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: system-ui, sans-serif;
-      background: radial-gradient(circle at top right, #202b50, var(--bg) 55%);
-      color: var(--text);
       min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      color: var(--brown-dark);
+      background:
+        radial-gradient(ellipse at 7% 4%, #f3dfbf 0%, transparent 30%),
+        radial-gradient(ellipse at 96% 14%, #f3dfd0 0%, transparent 27%),
+        linear-gradient(145deg, #fffaf0, #f7eddd 58%, #fcf7ee);
     }
-    main { max-width: 1200px; margin: auto; padding: 28px 18px; }
-    header { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
-    h1 { margin:0; font-size:clamp(24px,4vw,36px); }
-    .sub { color:var(--muted); margin-top:8px; }
-    .status { border:1px solid var(--border); border-radius:999px; padding:9px 14px; font-size:13px; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:14px; }
-    .card, .panel { background:rgba(21,29,50,.94); border:1px solid var(--border); border-radius:18px; padding:20px; }
-    .label { color:var(--muted); font-size:14px; }
-    .value { font-size:clamp(25px,3vw,34px); font-weight:750; margin:14px 0 6px; }
-    .unit { color:var(--muted); font-size:13px; }
-    .icon { font-size:24px; }
-    .layout { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-top:18px; }
-    .panel h2 { margin:0 0 18px; font-size:18px; }
-    .chart-wrap { height:300px; }
-    .info { display:grid; gap:12px; color:var(--muted); font-size:14px; }
-    footer { color:var(--muted); font-size:12px; text-align:center; margin-top:24px; }
-    @media(max-width:720px) { .layout { grid-template-columns:1fr; } main { padding:20px 12px; } }
+
+    .page {
+      width: min(1380px, 100%);
+      margin: auto;
+      padding: 34px 26px 24px;
+    }
+
+    .hero {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+      padding: 30px 34px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      background: rgba(255, 253, 248, 0.92);
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "☕";
+      position: absolute;
+      right: 185px;
+      top: -28px;
+      font-size: 112px;
+      opacity: 0.07;
+      pointer-events: none;
+      transform: rotate(-14deg);
+    }
+
+    .eyebrow {
+      color: var(--caramel);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--brown);
+      font-size: clamp(27px, 4vw, 42px);
+      line-height: 1.2;
+      font-weight: 850;
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .connection {
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 12px 17px;
+      color: var(--brown);
+      background: #f6ecdc;
+      border: 1px solid #e9d7bd;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #d6a34c;
+      box-shadow: 0 0 0 4px rgba(214, 163, 76, 0.13);
+    }
+
+    .connection.online .dot {
+      background: #6c9b72;
+      box-shadow: 0 0 0 4px rgba(108, 155, 114, 0.13);
+    }
+
+    .connection.offline .dot {
+      background: #c96b5a;
+      box-shadow: 0 0 0 4px rgba(201, 107, 90, 0.13);
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 28px 2px 15px;
+      color: var(--brown);
+      font-size: 19px;
+      font-weight: 850;
+    }
+
+    .section-heading .emoji {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 13px;
+      background: #f1e2cc;
+      font-size: 19px;
+    }
+
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 17px;
+    }
+
+    .sensor-card {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      padding: 23px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: linear-gradient(145deg, #fffefa, #fff7e9);
+      box-shadow: 0 8px 23px rgba(104, 68, 45, 0.065);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .sensor-card::after {
+      content: "";
+      position: absolute;
+      top: -38px;
+      right: -32px;
+      width: 105px;
+      height: 105px;
+      border-radius: 50%;
+      background: var(--bubble, rgba(221, 177, 126, 0.15));
+      pointer-events: none;
+    }
+
+    .sensor-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 30px rgba(104, 68, 45, 0.12);
+    }
+
+    .sensor-top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .sensor-icon {
+      display: grid;
+      place-items: center;
+      width: 51px;
+      height: 51px;
+      border-radius: 17px;
+      background: var(--icon-bg, #f3e5d1);
+      font-size: 27px;
+    }
+
+    .sensor-number {
+      margin-top: 19px;
+      color: var(--brown);
+      font-size: clamp(30px, 3.3vw, 40px);
+      font-weight: 850;
+      line-height: 1.1;
+      letter-spacing: -1.2px;
+      overflow-wrap: anywhere;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sensor-name {
+      margin-top: 14px;
+      color: var(--brown);
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .sensor-description {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .sensor-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 17px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f1ebdc;
+      color: #806b50;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .sensor-status::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #c3a16a;
+    }
+
+    .sensor-status.live {
+      background: #e8f0e4;
+      color: #527458;
+    }
+
+    .sensor-status.live::before {
+      background: #6c9b72;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 25px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      background: rgba(255, 253, 248, 0.96);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 8px;
+      color: var(--brown);
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .panel-subtitle {
+      margin: 0 0 21px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 310px;
+    }
+
+    .system-list {
+      display: grid;
+      gap: 0;
+    }
+
+    .system-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px 0;
+      border-bottom: 1px dashed #e8d9c6;
+      font-size: 13px;
+    }
+
+    .system-item:last-child {
+      border-bottom: none;
+    }
+
+    .system-label {
+      color: var(--muted);
+    }
+
+    .system-value {
+      max-width: 60%;
+      color: var(--brown);
+      font-weight: 800;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .system-note {
+      margin-top: 17px;
+      padding: 14px;
+      border-radius: 16px;
+      background: #f6eddf;
+      color: #866d53;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .history-panel {
+      margin-top: 18px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #eee1cf;
+      border-radius: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 650px;
+      font-size: 12px;
+    }
+
+    th, td {
+      padding: 13px 15px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 1px solid #f0e5d6;
+    }
+
+    th {
+      background: #f6eddf;
+      color: #77573e;
+      font-weight: 800;
+    }
+
+    td {
+      color: #765e4b;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: #fff8ed;
+    }
+
+    .empty-row {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+    }
+
+    footer {
+      padding: 25px 10px 5px;
+      text-align: center;
+      color: #a18a73;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .footer-mark {
+      color: var(--caramel);
+      font-weight: 850;
+    }
+
+    @media (min-width: 1050px) {
+      .sensor-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+
+      .sensor-card {
+        padding: 19px 16px;
+      }
+
+      .sensor-number {
+        font-size: 31px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding: 18px 12px;
+      }
+
+      .hero {
+        align-items: flex-start;
+        padding: 23px 20px;
+        border-radius: 24px;
+      }
+
+      .hero::after {
+        right: 8px;
+        top: 28px;
+        font-size: 65px;
+      }
+
+      .sensor-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 11px;
+      }
+
+      .sensor-card {
+        padding: 17px;
+        border-radius: 20px;
+      }
+
+      .sensor-number {
+        font-size: 29px;
+      }
+
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        padding: 19px;
+      }
+
+      .chart-wrap {
+        height: 270px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .sensor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
+
 <body>
-<main>
-  <header>
-    <div>
-      <h1>IoT 128 Dashboard</h1>
-      <div class="sub">ระบบติดตามสภาพแวดล้อม · Simulated Sensor Data</div>
-    </div>
-    <div class="status" id="connection">🟡 กำลังเชื่อมต่อ Firebase…</div>
-  </header>
+  <main class="page">
 
-  <section class="grid">
-    <article class="card"><div class="icon">🌡️</div><div class="label">Temperature</div><div class="value" id="temperature">—</div><div class="unit">°C</div></article>
-    <article class="card"><div class="icon">💧</div><div class="label">Humidity</div><div class="value" id="humidity">—</div><div class="unit">%</div></article>
-    <article class="card"><div class="icon">☀️</div><div class="label">Light</div><div class="value" id="light">—</div><div class="unit">lux</div></article>
-    <article class="card"><div class="icon">🌬️</div><div class="label">Air Quality</div><div class="value" id="air_quality">—</div><div class="unit">AQI · จำลอง</div></article>
-    <article class="card"><div class="icon">🌱</div><div class="label">Soil Moisture</div><div class="value" id="soil_moisture">—</div><div class="unit">%</div></article>
-    <article class="card"><div class="icon">🧭</div><div class="label">Pressure</div><div class="value" id="pressure">—</div><div class="unit">hPa</div></article>
-  </section>
-
-  <section class="layout">
-    <article class="panel">
-      <h2>📈 แนวโน้มเซ็นเซอร์</h2>
-      <div class="chart-wrap"><canvas id="chart"></canvas></div>
-    </article>
-    <article class="panel">
-      <h2>📡 สถานะระบบ</h2>
-      <div class="info">
-        <div>ฐานข้อมูล: <strong>iot-128</strong></div>
-        <div>แหล่งข้อมูล: <strong>Firebase RTDB</strong></div>
-        <div>ข้อมูลล่าสุด: <strong id="updated">รอข้อมูล</strong></div>
-        <div>จำนวนครั้งที่อัปเดต: <strong id="count">0</strong></div>
-        <div>โหมด: <strong>ค่าจำลองจาก ESP32</strong></div>
+    <header class="hero">
+      <div>
+        <div class="eyebrow">✦ Smart Environment · Project 128</div>
+        <h1>IoT 128 Dashboard ☕</h1>
+        <p class="subtitle">
+          มุมเล็ก ๆ สำหรับติดตามสภาพแวดล้อมแบบเรียลไทม์<br>
+          Cozy Café Theme · ESP32 · Firebase RTDB
+        </p>
       </div>
-    </article>
-  </section>
-  <footer>IoT Realtime Dashboard · Project 128</footer>
-</main>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, onValue, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+      <div class="connection" id="connection" role="status" aria-live="polite">
+        <span class="dot"></span>
+        <span id="connectionText">กำลังเชื่อมต่อ Firebase...</span>
+      </div>
+    </header>
 
-  const firebaseConfig = {
-    databaseURL: "https://iot-128-d52cd-default-rtdb.asia-southeast1.firebasedatabase.app"
-  };
+    <div class="section-heading">
+      <span class="emoji">🌷</span>
+      <span>ภาพรวมเซ็นเซอร์</span>
+    </div>
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const latestRef = ref(db, "latest");
-  const historyRef = ref(db, "history");
+    <section class="sensor-grid">
+      <article class="sensor-card" style="--bubble:#f6e2d3;--icon-bg:#f8e7d9">
+        <div class="sensor-top">
+          <div class="sensor-icon">🌡️</div>
+        </div>
+        <div class="sensor-number" id="temperature">—</div>
+        <div class="sensor-name">Temperature</div>
+        <div class="sensor-description">อุณหภูมิ</div>
+        <div class="sensor-status" id="status-temperature">รอข้อมูล</div>
+      </article>
 
-  const connection = document.getElementById("connection");
-  const countEl = document.getElementById("count");
-  const updatedEl = document.getElementById("updated");
-  let updateCount = 0;
+      <article class="sensor-card" style="--bubble:#dcebf0;--icon-bg:#e4f0f2">
+        <div class="sensor-top">
+          <div class="sensor-icon">💧</div>
+        </div>
+        <div class="sensor-number" id="humidity">—</div>
+        <div class="sensor-name">Humidity</div>
+        <div class="sensor-description">ความชื้นสัมพัทธ์</div>
+        <div class="sensor-status" id="status-humidity">รอข้อมูล</div>
+      </article>
 
-  const chart = new Chart(document.getElementById("chart"), {
-    type: "line",
-    data: {
-      labels: [],
-      datasets: [
-        { label: "Temperature (°C)", data: [], borderColor: "#9b8cff", tension: 0.3 },
-        { label: "Humidity (%)", data: [], borderColor: "#51c5ed", tension: 0.3 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      animation: false,
-      scales: { x: { ticks: { color: "#a8b3cc" } }, y: { ticks: { color: "#a8b3cc" } } },
-      plugins: { legend: { labels: { color: "#f4f7ff" } } }
+      <article class="sensor-card" style="--bubble:#f6e8bb;--icon-bg:#fbf0cf">
+        <div class="sensor-top">
+          <div class="sensor-icon">☀️</div>
+        </div>
+        <div class="sensor-number" id="light">—</div>
+        <div class="sensor-name">Light</div>
+        <div class="sensor-description">ระดับความสว่าง</div>
+        <div class="sensor-status" id="status-light">รอข้อมูล</div>
+      </article>
+
+      <article class="sensor-card" style="--bubble:#dcebdc;--icon-bg:#e7f0df">
+        <div class="sensor-top">
+          <div class="sensor-icon">🍃</div>
+        </div>
+        <div class="sensor-number" id="air_quality">—</div>
+        <div class="sensor-name">Air Quality</div>
+        <div class="sensor-description">ดัชนีคุณภาพอากาศจำลอง</div>
+        <div class="sensor-status" id="status-air_quality">รอข้อมูล</div>
+      </article>
+
+      <article class="sensor-card" style="--bubble:#e5e1c9;--icon-bg:#eeebd9">
+        <div class="sensor-top">
+          <div class="sensor-icon">🌱</div>
+        </div>
+        <div class="sensor-number" id="soil_moisture">—</div>
+        <div class="sensor-name">Soil Moisture</div>
+        <div class="sensor-description">ความชื้นในดินจำลอง</div>
+        <div class="sensor-status" id="status-soil_moisture">รอข้อมูล</div>
+      </article>
+
+      <article class="sensor-card" style="--bubble:#e8dff0;--icon-bg:#efe7f3">
+        <div class="sensor-top">
+          <div class="sensor-icon">🧭</div>
+        </div>
+        <div class="sensor-number" id="pressure">—</div>
+        <div class="sensor-name">Pressure</div>
+        <div class="sensor-description">ความกดอากาศจำลอง</div>
+        <div class="sensor-status" id="status-pressure">รอข้อมูล</div>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel">
+        <h2 class="panel-title">📈 แนวโน้มเซ็นเซอร์</h2>
+        <p class="panel-subtitle">
+          เปรียบเทียบอุณหภูมิและความชื้นจากรายการประวัติล่าสุด
+        </p>
+        <div class="chart-wrap">
+          <canvas id="chart"></canvas>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2 class="panel-title">🧸 สถานะระบบ</h2>
+        <p class="panel-subtitle">
+          ข้อมูลสถานะการเชื่อมต่อและการอัปเดตล่าสุด
+        </p>
+
+        <div class="system-list">
+          <div class="system-item">
+            <span class="system-label">ฐานข้อมูล</span>
+            <span class="system-value">iot-128</span>
+          </div>
+          <div class="system-item">
+            <span class="system-label">แหล่งข้อมูล</span>
+            <span class="system-value">Firebase RTDB</span>
+          </div>
+          <div class="system-item">
+            <span class="system-label">อุปกรณ์</span>
+            <span class="system-value">ESP32</span>
+          </div>
+          <div class="system-item">
+            <span class="system-label">ข้อมูลล่าสุด</span>
+            <span class="system-value" id="updated">รอข้อมูล</span>
+          </div>
+          <div class="system-item">
+            <span class="system-label">จำนวนการอัปเดต</span>
+            <span class="system-value" id="count">0</span>
+          </div>
+          <div class="system-item">
+            <span class="system-label">ประวัติที่แสดง</span>
+            <span class="system-value" id="historyCount">0 รายการ</span>
+          </div>
+        </div>
+
+        <div class="system-note" id="systemNote">
+          ☕ กำลังรอข้อมูลจาก ESP32 และ Firebase
+        </div>
+      </article>
+    </section>
+
+    <section class="panel history-panel">
+      <h2 class="panel-title">📝 ประวัติข้อมูลล่าสุด</h2>
+      <p class="panel-subtitle">
+        แสดงรายการจาก Firebase history สูงสุด 10 รายการล่าสุด
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>เวลา</th>
+              <th>อุณหภูมิ (°C)</th>
+              <th>ความชื้น (%)</th>
+              <th>แสง (lux)</th>
+              <th>Air Quality</th>
+              <th>ความชื้นดิน (%)</th>
+              <th>ความดัน (hPa)</th>
+            </tr>
+          </thead>
+          <tbody id="historyTable">
+            <tr>
+              <td colspan="7" class="empty-row">กำลังโหลดประวัติ...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-mark">☕ IoT 128 · Cozy Sensor Dashboard</div>
+      ESP32 · ESPHome · Firebase Realtime Database · GitHub Pages
+      <br>
+      ข้อมูลเซ็นเซอร์เป็นค่าจำลองเพื่อการศึกษา
+    </footer>
+
+  </main>
+
+  <script type="module">
+    import { initializeApp } from
+      "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+    import {
+      getDatabase,
+      ref,
+      onValue
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      databaseURL:
+        "https://iot-128-d52cd-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+
+    const SENSOR_KEYS = [
+      "temperature",
+      "humidity",
+      "light",
+      "air_quality",
+      "soil_moisture",
+      "pressure"
+    ];
+
+    const SENSOR_FORMAT = {
+      temperature: { digits: 1, unit: "°C" },
+      humidity: { digits: 1, unit: "%" },
+      light: { digits: 0, unit: "lux" },
+      air_quality: { digits: 0, unit: "AQI" },
+      soil_moisture: { digits: 1, unit: "%" },
+      pressure: { digits: 1, unit: "hPa" }
+    };
+
+    const connection = document.getElementById("connection");
+    const connectionText = document.getElementById("connectionText");
+    const updatedEl = document.getElementById("updated");
+    const countEl = document.getElementById("count");
+    const historyCountEl = document.getElementById("historyCount");
+    const historyTable = document.getElementById("historyTable");
+    const systemNote = document.getElementById("systemNote");
+
+    let updateCount = 0;
+    let chartReady = false;
+
+    function setConnection(state, message) {
+      connection.classList.remove("online", "offline");
+
+      if (state === "online") {
+        connection.classList.add("online");
+      } else if (state === "offline") {
+        connection.classList.add("offline");
+      }
+
+      connectionText.textContent = message;
     }
-  });
 
-  function setConnection(ok, message) {
-    connection.textContent = ok ? "🟢 " + message : "🔴 " + message;
-  }
+    function formatTime(timestamp) {
+      if (timestamp === undefined || timestamp === null ||
+          !Number.isFinite(Number(timestamp)) || Number(timestamp) <= 0) {
+        return "ไม่ระบุเวลา";
+      }
 
-  onValue(latestRef, snapshot => {
-    const data = snapshot.val();
-    if (!data) {
-      setConnection(false, "ยังไม่มีข้อมูลใน latest");
-      return;
-    }
-    for (const key of ["temperature", "humidity", "light", "air_quality", "soil_moisture", "pressure"]) {
-      const el = document.getElementById(key);
-      el.textContent = Number.isFinite(Number(data[key])) ? Number(data[key]).toFixed(key === "light" || key === "air_quality" ? 0 : 1) : "—";
-    }
-    updatedEl.textContent = data.timestamp ? new Date(Number(data.timestamp) * 1000).toLocaleTimeString("th-TH") : new Date().toLocaleTimeString("th-TH");
-    updateCount++;
-    countEl.textContent = updateCount;
-    setConnection(true, "เชื่อมต่อแล้ว · Live");
-  }, error => setConnection(false, "อ่าน Firebase ไม่สำเร็จ: " + error.code));
+      const date = new Date(Number(timestamp) * 1000);
 
-  const seen = new Set();
-  onChildAdded(historyRef, snapshot => {
-    if (seen.has(snapshot.key)) return;
-    seen.add(snapshot.key);
-    const data = snapshot.val();
-    if (!data || !Number.isFinite(Number(data.temperature)) || !Number.isFinite(Number(data.humidity))) return;
-    chart.data.labels.push(data.timestamp ? new Date(Number(data.timestamp) * 1000).toLocaleTimeString("th-TH") : new Date().toLocaleTimeString("th-TH"));
-    chart.data.datasets[0].data.push(Number(data.temperature));
-    chart.data.datasets[1].data.push(Number(data.humidity));
-    while (chart.data.labels.length > 30) {
-      chart.data.labels.shift();
-      chart.data.datasets.forEach(ds => ds.data.shift());
+      if (Number.isNaN(date.getTime())) {
+        return "เวลาไม่ถูกต้อง";
+      }
+
+      return date.toLocaleString("th-TH", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
     }
-    chart.update();
-  }, error => setConnection(false, "อ่าน history ไม่สำเร็จ: " + error.code));
-</script>
+
+    function formatValue(key, value) {
+      if (value === null || value === undefined || value === "") {
+        return "—";
+      }
+
+      const number = Number(value);
+
+      if (!Number.isFinite(number)) {
+        return "—";
+      }
+
+      return number.toLocaleString("th-TH", {
+        minimumFractionDigits: SENSOR_FORMAT[key].digits,
+        maximumFractionDigits: SENSOR_FORMAT[key].digits
+      });
+    }
+
+    function setSensorStatus(key, available) {
+      const element = document.getElementById("status-" + key);
+
+      if (!element) return;
+
+      element.textContent = available ? "ได้รับข้อมูลแล้ว" : "ไม่มีข้อมูล";
+      element.classList.toggle("live", available);
+    }
+
+    const chart = new Chart(document.getElementById("chart"), {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Temperature (°C)",
+            data: [],
+            borderColor: "#a66b42",
+            backgroundColor: "rgba(166, 107, 66, 0.10)",
+            pointBackgroundColor: "#fff8ed",
+            pointBorderColor: "#a66b42",
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            borderWidth: 2.5,
+            tension: 0.35
+          },
+          {
+            label: "Humidity (%)",
+            data: [],
+            borderColor: "#dfa17d",
+            backgroundColor: "rgba(223, 161, 125, 0.10)",
+            pointBackgroundColor: "#fff8ed",
+            pointBorderColor: "#dfa17d",
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            borderWidth: 2.5,
+            tension: 0.35
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: {
+          intersect: false,
+          mode: "index"
+        },
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              color: "#80674f",
+              usePointStyle: true,
+              pointStyle: "circle",
+              padding: 18,
+              font: {
+                family: "Segoe UI",
+                size: 11
+              }
+            }
+          },
+          tooltip: {
+            backgroundColor: "#68442d",
+            titleColor: "#fffaf0",
+            bodyColor: "#fffaf0",
+            padding: 12,
+            cornerRadius: 10
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: "#947b65",
+              maxTicksLimit: 7,
+              maxRotation: 0
+            },
+            grid: {
+              color: "rgba(140, 114, 92, 0.10)"
+            },
+            border: {
+              color: "#ead8c1"
+            }
+          },
+          y: {
+            ticks: {
+              color: "#947b65"
+            },
+            grid: {
+              color: "rgba(140, 114, 92, 0.12)"
+            },
+            border: {
+              color: "#ead8c1"
+            }
+          }
+        }
+      }
+    });
+
+    chartReady = true;
+
+    function renderHistory(historyObject) {
+      if (!historyObject || typeof historyObject !== "object") {
+        historyTable.innerHTML =
+          '<tr><td colspan="7" class="empty-row">ยังไม่มีข้อมูลประวัติ</td></tr>';
+
+        historyCountEl.textContent = "0 รายการ";
+        chart.data.labels = [];
+        chart.data.datasets.forEach(dataset => dataset.data = []);
+        chart.update();
+        return;
+      }
+
+      const entries = Object.entries(historyObject)
+        .map(([key, value]) => ({ key, ...(value || {}) }))
+        .filter(item =>
+          SENSOR_KEYS.every(key =>
+            item[key] !== null &&
+            item[key] !== undefined &&
+            Number.isFinite(Number(item[key]))
+          )
+        )
+        .sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+
+      const latestEntries = entries.slice(-30);
+
+      historyCountEl.textContent = `${entries.length} รายการ`;
+
+      chart.data.labels = latestEntries.map(item =>
+        item.timestamp
+          ? new Date(Number(item.timestamp) * 1000).toLocaleTimeString("th-TH", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: false
+            })
+          : "—"
+      );
+
+      chart.data.datasets[0].data =
+        latestEntries.map(item => Number(item.temperature));
+
+      chart.data.datasets[1].data =
+        latestEntries.map(item => Number(item.humidity));
+
+      if (chartReady) chart.update();
+
+      const tableEntries = entries.slice(-10).reverse();
+
+      if (tableEntries.length === 0) {
+        historyTable.innerHTML =
+          '<tr><td colspan="7" class="empty-row">ยังไม่มีข้อมูลประวัติที่ครบถ้วน</td></tr>';
+        return;
+      }
+
+      historyTable.replaceChildren();
+
+      for (const item of tableEntries) {
+        const row = document.createElement("tr");
+        const values = [
+          formatTime(item.timestamp),
+          formatValue("temperature", item.temperature),
+          formatValue("humidity", item.humidity),
+          formatValue("light", item.light),
+          formatValue("air_quality", item.air_quality),
+          formatValue("soil_moisture", item.soil_moisture),
+          formatValue("pressure", item.pressure)
+        ];
+
+        for (const value of values) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        }
+
+        historyTable.appendChild(row);
+      }
+    }
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+
+      setConnection("connecting", "กำลังเชื่อมต่อ Firebase...");
+
+      onValue(
+        ref(database, ".info/connected"),
+        snapshot => {
+          if (snapshot.val() === true) {
+            setConnection("online", "เชื่อมต่อแล้ว · Live");
+          } else {
+            setConnection("offline", "กำลังเชื่อมต่อใหม่...");
+          }
+        },
+        error => {
+          setConnection("offline", "ตรวจสอบการเชื่อมต่อ");
+          systemNote.textContent = "ไม่สามารถตรวจสอบสถานะ Firebase ได้: " + error.code;
+        }
+      );
+
+      onValue(
+        ref(database, "latest"),
+        snapshot => {
+          const data = snapshot.val();
+
+          if (!data || typeof data !== "object") {
+            setConnection("offline", "ยังไม่มีข้อมูล latest");
+            systemNote.textContent =
+              "ไม่พบข้อมูลล่าสุด กรุณาตรวจสอบว่า ESP32 ส่งข้อมูลเข้า Firebase แล้ว";
+            return;
+          }
+
+          let hasSensorData = false;
+
+          for (const key of SENSOR_KEYS) {
+            const value = data[key];
+            const available =
+              value !== null &&
+              value !== undefined &&
+              Number.isFinite(Number(value));
+
+            document.getElementById(key).textContent =
+              available ? formatValue(key, value) : "—";
+
+            setSensorStatus(key, available);
+
+            if (available) hasSensorData = true;
+          }
+
+          if (data.timestamp !== undefined && data.timestamp !== null) {
+            updatedEl.textContent = formatTime(data.timestamp);
+          } else {
+            updatedEl.textContent = "ไม่มี timestamp";
+          }
+
+          updateCount += 1;
+          countEl.textContent = updateCount.toLocaleString("th-TH");
+
+          if (hasSensorData) {
+            systemNote.textContent =
+              "☕ ได้รับข้อมูลล่าสุดจาก Firebase แล้ว ระบบจะแสดงค่าใหม่โดยอัตโนมัติ";
+          } else {
+            systemNote.textContent =
+              "พบ latest แต่ยังไม่มีค่าตัวเลขเซ็นเซอร์ที่ใช้แสดงผลได้";
+          }
+        },
+        error => {
+          setConnection("offline", "อ่าน latest ไม่สำเร็จ");
+          systemNote.textContent =
+            "อ่านข้อมูล latest ไม่สำเร็จ: " + error.code +
+            " กรุณาตรวจสอบ Firebase Database Rules";
+        }
+      );
+
+      onValue(
+        ref(database, "history"),
+        snapshot => {
+          renderHistory(snapshot.val());
+        },
+        error => {
+          systemNote.textContent =
+            "อ่าน history ไม่สำเร็จ: " + error.code +
+            " กรุณาตรวจสอบสิทธิ์อ่านข้อมูล Firebase";
+        }
+      );
+
+    } catch (error) {
+      console.error("Firebase initialization error:", error);
+      setConnection("offline", "เริ่มต้น Firebase ไม่สำเร็จ");
+      systemNote.textContent =
+        "ไม่สามารถเริ่มต้น Firebase ได้ กรุณาเปิด Developer Console เพื่อตรวจสอบข้อผิดพลาด";
+    }
+  </script>
 </body>
 </html>
