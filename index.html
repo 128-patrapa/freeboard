@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT 128 | Realtime Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #151d32;
+      --text: #f4f7ff;
+      --muted: #a8b3cc;
+      --accent: #8b7cff;
+      --border: #29344d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: radial-gradient(circle at top right, #202b50, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    main { max-width: 1200px; margin: auto; padding: 28px 18px; }
+    header { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
+    h1 { margin:0; font-size:clamp(24px,4vw,36px); }
+    .sub { color:var(--muted); margin-top:8px; }
+    .status { border:1px solid var(--border); border-radius:999px; padding:9px 14px; font-size:13px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:14px; }
+    .card, .panel { background:rgba(21,29,50,.94); border:1px solid var(--border); border-radius:18px; padding:20px; }
+    .label { color:var(--muted); font-size:14px; }
+    .value { font-size:clamp(25px,3vw,34px); font-weight:750; margin:14px 0 6px; }
+    .unit { color:var(--muted); font-size:13px; }
+    .icon { font-size:24px; }
+    .layout { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-top:18px; }
+    .panel h2 { margin:0 0 18px; font-size:18px; }
+    .chart-wrap { height:300px; }
+    .info { display:grid; gap:12px; color:var(--muted); font-size:14px; }
+    footer { color:var(--muted); font-size:12px; text-align:center; margin-top:24px; }
+    @media(max-width:720px) { .layout { grid-template-columns:1fr; } main { padding:20px 12px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>IoT 128 Dashboard</h1>
+      <div class="sub">ระบบติดตามสภาพแวดล้อม · Simulated Sensor Data</div>
+    </div>
+    <div class="status" id="connection">🟡 กำลังเชื่อมต่อ Firebase…</div>
+  </header>
+
+  <section class="grid">
+    <article class="card"><div class="icon">🌡️</div><div class="label">Temperature</div><div class="value" id="temperature">—</div><div class="unit">°C</div></article>
+    <article class="card"><div class="icon">💧</div><div class="label">Humidity</div><div class="value" id="humidity">—</div><div class="unit">%</div></article>
+    <article class="card"><div class="icon">☀️</div><div class="label">Light</div><div class="value" id="light">—</div><div class="unit">lux</div></article>
+    <article class="card"><div class="icon">🌬️</div><div class="label">Air Quality</div><div class="value" id="air_quality">—</div><div class="unit">AQI · จำลอง</div></article>
+    <article class="card"><div class="icon">🌱</div><div class="label">Soil Moisture</div><div class="value" id="soil_moisture">—</div><div class="unit">%</div></article>
+    <article class="card"><div class="icon">🧭</div><div class="label">Pressure</div><div class="value" id="pressure">—</div><div class="unit">hPa</div></article>
+  </section>
+
+  <section class="layout">
+    <article class="panel">
+      <h2>📈 แนวโน้มเซ็นเซอร์</h2>
+      <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    </article>
+    <article class="panel">
+      <h2>📡 สถานะระบบ</h2>
+      <div class="info">
+        <div>ฐานข้อมูล: <strong>iot-128</strong></div>
+        <div>แหล่งข้อมูล: <strong>Firebase RTDB</strong></div>
+        <div>ข้อมูลล่าสุด: <strong id="updated">รอข้อมูล</strong></div>
+        <div>จำนวนครั้งที่อัปเดต: <strong id="count">0</strong></div>
+        <div>โหมด: <strong>ค่าจำลองจาก ESP32</strong></div>
+      </div>
+    </article>
+  </section>
+  <footer>IoT Realtime Dashboard · Project 128</footer>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    databaseURL: "https://iot-128-d52cd-default-rtdb.asia-southeast1.firebasedatabase.app"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const latestRef = ref(db, "latest");
+  const historyRef = ref(db, "history");
+
+  const connection = document.getElementById("connection");
+  const countEl = document.getElementById("count");
+  const updatedEl = document.getElementById("updated");
+  let updateCount = 0;
+
+  const chart = new Chart(document.getElementById("chart"), {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [
+        { label: "Temperature (°C)", data: [], borderColor: "#9b8cff", tension: 0.3 },
+        { label: "Humidity (%)", data: [], borderColor: "#51c5ed", tension: 0.3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: false,
+      scales: { x: { ticks: { color: "#a8b3cc" } }, y: { ticks: { color: "#a8b3cc" } } },
+      plugins: { legend: { labels: { color: "#f4f7ff" } } }
+    }
+  });
+
+  function setConnection(ok, message) {
+    connection.textContent = ok ? "🟢 " + message : "🔴 " + message;
+  }
+
+  onValue(latestRef, snapshot => {
+    const data = snapshot.val();
+    if (!data) {
+      setConnection(false, "ยังไม่มีข้อมูลใน latest");
+      return;
+    }
+    for (const key of ["temperature", "humidity", "light", "air_quality", "soil_moisture", "pressure"]) {
+      const el = document.getElementById(key);
+      el.textContent = Number.isFinite(Number(data[key])) ? Number(data[key]).toFixed(key === "light" || key === "air_quality" ? 0 : 1) : "—";
+    }
+    updatedEl.textContent = data.timestamp ? new Date(Number(data.timestamp) * 1000).toLocaleTimeString("th-TH") : new Date().toLocaleTimeString("th-TH");
+    updateCount++;
+    countEl.textContent = updateCount;
+    setConnection(true, "เชื่อมต่อแล้ว · Live");
+  }, error => setConnection(false, "อ่าน Firebase ไม่สำเร็จ: " + error.code));
+
+  const seen = new Set();
+  onChildAdded(historyRef, snapshot => {
+    if (seen.has(snapshot.key)) return;
+    seen.add(snapshot.key);
+    const data = snapshot.val();
+    if (!data || !Number.isFinite(Number(data.temperature)) || !Number.isFinite(Number(data.humidity))) return;
+    chart.data.labels.push(data.timestamp ? new Date(Number(data.timestamp) * 1000).toLocaleTimeString("th-TH") : new Date().toLocaleTimeString("th-TH"));
+    chart.data.datasets[0].data.push(Number(data.temperature));
+    chart.data.datasets[1].data.push(Number(data.humidity));
+    while (chart.data.labels.length > 30) {
+      chart.data.labels.shift();
+      chart.data.datasets.forEach(ds => ds.data.shift());
+    }
+    chart.update();
+  }, error => setConnection(false, "อ่าน history ไม่สำเร็จ: " + error.code));
+</script>
+</body>
+</html>
